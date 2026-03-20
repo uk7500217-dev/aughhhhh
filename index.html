@@ -3,107 +3,146 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-        canvas { display: block; touch-action: none; } /* Disables browser zoom/scroll lag */
+        body { 
+            background: #000; color: #ff0033; 
+            font-family: 'Courier New', monospace; 
+            overflow: hidden; margin: 0; cursor: crosshair;
+            transition: background 1s ease;
+        }
+
+        /* Lo-fi Film Grain */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.15; pointer-events: none; z-index: 100; mix-blend-mode: overlay;
+        }
+
         #ui {
-            position: fixed; top: 10px; left: 10px; color: #ff0033;
-            font-family: monospace; font-size: 10px; pointer-events: none;
-            text-shadow: 0 0 5px #ff0033; z-index: 10;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; z-index: 50; width: 90%;
+        }
+
+        .heart-shard {
+            position: absolute; font-size: 20px; pointer-events: none;
+            text-shadow: 0 0 10px #ff0033; z-index: 10;
+            will-change: transform, top, left;
+        }
+
+        h1 { 
+            font-size: 2.5rem; letter-spacing: 5px; text-transform: uppercase; 
+            margin: 0; transition: all 0.3s;
+        }
+
+        #counter { font-size: 1.2rem; margin-top: 10px; opacity: 0.7; }
+
+        .glitch-text { animation: shake 0.1s infinite; color: #fff; text-shadow: 2px 0 red, -2px 0 blue; }
+
+        @keyframes shake {
+            0% { transform: translate(0,0); }
+            25% { transform: translate(5px, -5px); }
+            50% { transform: translate(-5px, 5px); }
+            75% { transform: translate(5px, 5px); }
+            100% { transform: translate(0,0); }
+        }
+
+        /* Background Pulse for high obsession */
+        .pulse { animation: pulse-bg 0.5s infinite alternate; }
+        @keyframes pulse-bg {
+            from { background: #000; }
+            to { background: #200000; }
         }
     </style>
 </head>
 <body>
-    <div id="ui">HEART_STABILITY: <span id="percent">100</span>% <br> CATCHES: <span id="score">0</span>/3</div>
-    <canvas id="gameCanvas"></canvas>
+    <div class="overlay"></div>
+    <div id="ui">
+        <h1 id="status">HEART_STABLE</h1>
+        <p id="counter">OBSESSION: 0%</p>
+    </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score');
-        const percentEl = document.getElementById('percent');
+        const status = document.getElementById('status');
+        const counter = document.getElementById('counter');
+        let obsessionLevel = 0;
+        
+        const lines = {
+            50: "I_AM_WATCHING_YOU",
+            100: "YOU_CANT_HIDE",
+            150: "I_AINT_LETTING_U_GO",
+            200: "STAY_WITH_ME_FOREVER",
+            250: "YOUR_SOUL_IS_REQUIRED",
+            300: "POSSESSION_COMPLETE"
+        };
 
-        let width, height, heartX, heartY, score = 0, stability = 100;
-        let heartSize = 50;
+        // Efficient Touch/Mouse Tracker
+        const track = (e) => {
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            obsessionLevel += 0.2;
+            const level = Math.floor(obsessionLevel);
+            counter.innerText = `OBSESSION: ${level}%`;
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            spawnHeart();
-        }
+            // 1. PHASE EVOLUTION (Every 50%)
+            Object.keys(lines).forEach(key => {
+                if (level >= key) {
+                    status.innerText = lines[key];
+                    status.classList.add('glitch-text');
+                }
+            });
 
-        function spawnHeart() {
-            heartX = Math.random() * (width - heartSize) + heartSize/2;
-            heartY = Math.random() * (height - heartSize) + heartSize/2;
-        }
+            // 2. THEME EVOLUTION (Every 100%)
+            if (level >= 100) document.body.style.background = "#0d0000";
+            if (level >= 200) {
+                document.body.style.background = "#1a0000";
+                document.body.classList.add('pulse');
+            }
+            if (level >= 300) {
+                document.body.innerHTML = `
+                    <div style="background:#000; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+                        <h1 style="color:white; font-size:4rem; text-shadow: 0 0 20px red;">YOU_ARE_ALL_MINE!!!</h1>
+                        <p style="color:red; letter-spacing:10px; margin-top:20px;">FOR_ALL_ETERNITY</p>
+                    </div>`;
+                document.title = "PROPERTY_OF_HIM";
+            }
 
-        // Optimized Teleport (Moves every 400ms)
+            // 3. SPARK SYSTEM (Lag-optimized)
+            const shard = document.createElement('div');
+            shard.className = 'heart-shard';
+            shard.innerHTML = Math.random() > 0.7 ? "❤" : "MINE";
+            shard.style.left = x + 'px';
+            shard.style.top = y + 'px';
+            document.body.appendChild(shard);
+
+            let posY = y;
+            let opacity = 1;
+            const float = () => {
+                posY -= 3;
+                opacity -= 0.03;
+                shard.style.top = posY + 'px';
+                shard.style.opacity = opacity;
+                if (opacity > 0) {
+                    requestAnimationFrame(float);
+                } else {
+                    shard.remove();
+                }
+            };
+            requestAnimationFrame(float);
+        };
+
+        document.addEventListener('mousemove', track);
+        document.addEventListener('touchmove', track, {passive: true});
+
+        // Background "Whispers"
         setInterval(() => {
-            if (score < 3) spawnHeart();
-        }, 450);
-
-        function draw() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, width, height);
-
-            // 90s Film Grain (Directly drawn for speed)
-            for (let i = 0; i < 500; i++) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
-                ctx.fillRect(Math.random() * width, Math.random() * height, 1, 1);
+            if(obsessionLevel > 30) {
+                const whisper = document.createElement('div');
+                whisper.style.cssText = `position:fixed; left:${Math.random()*100}vw; top:${Math.random()*100}vh; color:#300; font-size:10px; z-index:1; pointer-events:none;`;
+                whisper.innerText = "DONT_LOOK_AWAY";
+                document.body.appendChild(whisper);
+                setTimeout(() => whisper.remove(), 800);
             }
-
-            if (score < 3) {
-                // The Heart
-                ctx.font = `${heartSize}px serif`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = "#ff0033";
-                ctx.fillStyle = "#ff0033";
-                ctx.fillText("❤", heartX, heartY);
-                
-                // Stability decay
-                stability -= 0.05;
-                percentEl.innerText = Math.floor(stability);
-            } else {
-                // WIN SCREEN
-                ctx.shadowBlur = 20;
-                ctx.fillStyle = "white";
-                ctx.font = "20px monospace";
-                ctx.fillText("I_AM_POSSESSED_BY_YOU", width/2, height/2);
-                ctx.fillStyle = "#ff0033";
-                ctx.font = "12px monospace";
-                ctx.fillText("CONNECTION_PERMANENT", width/2, height/2 + 40);
-            }
-
-            if (stability <= 0 && score < 3) {
-                ctx.fillStyle = "white";
-                ctx.fillText("LOVE_LOST", width/2, height/2);
-            } else {
-                requestAnimationFrame(draw);
-            }
-        }
-
-        // Instant Touch Detection (No 300ms delay)
-        canvas.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            const dx = touch.clientX - heartX;
-            const dy = touch.clientY - heartY;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-
-            if (dist < heartSize) {
-                score++;
-                scoreEl.innerText = score;
-                stability = Math.min(stability + 20, 100);
-                spawnHeart();
-                
-                // Haptic Feedback (if mobile supports it)
-                if (navigator.vibrate) navigator.vibrate(50);
-            }
-        }, { passive: true });
-
-        window.addEventListener('resize', resize);
-        resize();
-        draw();
+        }, 300);
     </script>
 </body>
 </html>
