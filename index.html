@@ -9,126 +9,114 @@
         }
 
         #noise {
-            position: fixed; width: 100vw; height: 100vh;
+            position: fixed; inset: 0;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_Noise_Texture.png');
-            opacity: 0.15; pointer-events: none; z-index: 100;
-        }
-
-        /* The Ghostly Text in the background */
-        .ghost-text {
-            position: fixed; font-size: 10rem; color: rgba(255, 0, 51, 0.05);
-            z-index: 1; font-weight: bold; pointer-events: none;
+            opacity: 0.1; pointer-events: none; z-index: 100;
         }
 
         #heart {
-            position: absolute; font-size: 45px; cursor: pointer;
-            text-shadow: 0 0 15px #ff0033, 0 0 30px #ff0000;
+            position: absolute; font-size: 50px; cursor: pointer;
+            text-shadow: 0 0 15px #ff0033;
             z-index: 50; user-select: none;
-            transition: all 0.05s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            /* REMOVED TRANSITIONS FOR INSTANT SNAPPING */
+            will-change: transform, left, top;
         }
 
-        .trail {
-            position: absolute; font-size: 20px; color: #300;
-            pointer-events: none; z-index: 40;
+        .glitch-flash {
+            position: fixed; inset: 0;
+            background: rgba(255, 0, 0, 0.05);
+            pointer-events: none; display: none; z-index: 1;
         }
 
-        #cursor-eye {
-            width: 20px; height: 20px; border: 1px solid #fff;
+        #custom-cursor {
+            width: 10px; height: 10px; background: #fff;
             position: fixed; pointer-events: none; z-index: 1000;
-            box-shadow: 0 0 10px red;
+            box-shadow: 0 0 15px #ff0033;
+        }
+
+        #ui-text {
+            position: fixed; top: 20px; left: 20px; font-size: 10px; opacity: 0.5;
         }
     </style>
 </head>
 <body>
     <div id="noise"></div>
-    <div id="cursor-eye"></div>
-    <div class="ghost-text" id="bg-ghost">POSSESSED</div>
+    <div id="custom-cursor"></div>
+    <div id="glitch-bg" class="glitch-flash"></div>
+    <div id="ui-text">SYSTEM_LINK: ESTABLISHED // TARGET: HER_HEART</div>
     <div id="heart">❤</div>
 
     <script>
         const heart = document.getElementById('heart');
-        const eye = document.getElementById('cursor-eye');
-        const ghost = document.getElementById('bg-ghost');
+        const cursor = document.getElementById('custom-cursor');
+        const flash = document.getElementById('glitch-bg');
         
         let hX = window.innerWidth / 2;
         let hY = window.innerHeight / 2;
-        let intensity = 0;
+        let caughtCount = 0;
 
-        // 1. RANDOM MAD DIRECTIONAL MOVEMENT
-        function glitchMove() {
-            // Pick a totally random direction and distance
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 100 + Math.random() * 300;
+        // 1. INSTANT RANDOM MOVEMENT (No Lag)
+        function teleport() {
+            hX = Math.random() * (window.innerWidth - 60);
+            hY = Math.random() * (window.innerHeight - 60);
             
-            hX += Math.cos(angle) * dist;
-            hY += Math.sin(angle) * dist;
-
-            // Bounce off walls
-            if (hX < 0 || hX > window.innerWidth) hX = Math.random() * window.innerWidth;
-            if (hY < 0 || hY > window.innerHeight) hY = Math.random() * window.innerHeight;
-
             heart.style.left = hX + 'px';
             heart.style.top = hY + 'px';
             
-            // Randomly scale the heart like it's "breathing"
-            heart.style.transform = `scale(${0.8 + Math.random() * 1.5}) rotate(${(Math.random()-0.5)*40}deg)`;
+            // Fast erratic scaling
+            const scale = 0.8 + Math.random() * 1.5;
+            const rot = (Math.random() - 0.5) * 60;
+            heart.style.transform = `scale(${scale}) rotate(${rot}deg)`;
 
-            // Call again at random intervals for that "mad" feeling
-            setTimeout(glitchMove, 100 + Math.random() * 400);
+            // High-speed repositioning
+            setTimeout(teleport, 150 + Math.random() * 300);
         }
-        glitchMove();
+        teleport();
 
-        // 2. MOUSE TRACKING & VIBE
+        // 2. CURSOR FOLLOW (Zero Latency)
         document.addEventListener('mousemove', (e) => {
-            eye.style.left = e.clientX + 'px';
-            eye.style.top = e.clientY + 'px';
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
             
-            // Background reacts to proximity
-            const dx = hX - e.clientX;
-            const dy = hY - e.clientY;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            
-            if (dist < 200) {
-                document.body.style.backgroundColor = "#100";
-                ghost.innerText = "ALMOST_MINE";
-                ghost.style.opacity = "0.2";
+            // Logic to make background flicker when close
+            const dist = Math.hypot(hX - e.clientX, hY - e.clientY);
+            if (dist < 150) {
+                flash.style.display = 'block';
+                if(Math.random() > 0.8) heart.innerText = "MINE";
             } else {
-                document.body.style.backgroundColor = "#000";
-                ghost.style.opacity = "0.05";
+                flash.style.display = 'none';
+                heart.innerText = "❤";
             }
         });
 
-        // 3. POSSESSED TRAIL
-        setInterval(() => {
-            const t = document.createElement('div');
-            t.className = 'trail';
-            t.style.left = hX + 'px';
-            t.style.top = hY + 'px';
-            t.innerText = "❤";
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 500);
-        }, 50);
-
-        // 4. THE CATCH (Super Hard)
-        heart.addEventListener('mouseover', () => {
-            // Even if she hovers, it tries to jump away immediately!
-            hX = Math.random() * (window.innerWidth - 50);
-            hY = Math.random() * (window.innerHeight - 50);
-            heart.style.left = hX + 'px';
-            heart.style.top = hY + 'px';
+        // 3. THE "POSSESSED" DODGE
+        // If she gets too close without clicking, it jumps!
+        document.addEventListener('mousemove', (e) => {
+            const dist = Math.hypot(hX - e.clientX, hY - e.clientY);
+            if (dist < 80) {
+                hX = Math.random() * (window.innerWidth - 60);
+                hY = Math.random() * (window.innerHeight - 60);
+                heart.style.left = hX + 'px';
+                heart.style.top = hY + 'px';
+            }
         });
 
-        heart.addEventListener('mousedown', () => {
-            intensity++;
-            document.title = `CAPTURED_${intensity}`;
+        // 4. THE CATCH
+        heart.addEventListener('mousedown', (e) => {
+            caughtCount++;
             
-            if (intensity >= 3) {
+            // Visual feedback for catch
+            document.body.style.backgroundColor = "#ff0033";
+            setTimeout(() => document.body.style.backgroundColor = "#000", 50);
+
+            if (caughtCount >= 3) {
                 document.body.innerHTML = `
-                    <div style="text-align:center; margin-top:20%; animation: glitch-final 0.1s infinite;">
-                        <h1 style="color:white; font-size:5rem;">I_AM_YOURS</h1>
-                        <p style="color:red; letter-spacing:10px;">POSSESSION_COMPLETE</p>
+                    <div style="text-align:center; margin-top:20%;">
+                        <h1 style="color:white; font-size:4rem; text-shadow: 0 0 20px red;">I_AM_POSSESSED_BY_YOU</h1>
+                        <p style="letter-spacing:15px; color:#ff0033;">CONNECTION_PERMANENT</p>
                     </div>
                 `;
+                document.title = "LOCKED_IN_LOVE";
             }
         });
     </script>
